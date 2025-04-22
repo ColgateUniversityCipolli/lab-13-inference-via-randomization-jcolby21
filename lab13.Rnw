@@ -256,9 +256,86 @@ original sample ($s$)
 \begin{enumerate}
   \item Perform a simulation study to evaluate the Type I error for conducting this
 hypothesis test both ways.
+<< message=FALSE, warning=FALSE>>=
+# Parameters
+R <- 1000   # bootstrap resamples
+S <- 1000   # simulations
+n <- 30     # sample size
+alpha <- 0.05
+mu <- 0     # true mean
+
+# Store rejections
+type1_results <- tibble(
+  reject_fixed = logical(S),
+  reject_flex  = logical(S)
+)
+
+for (i in 1:S) {
+  x <- rnorm(n, mean = mu, sd = 1)
+  s <- sd(x)
+  xbar <- mean(x)
+  
+  resamples <- replicate(R, sample(x, n, replace = TRUE))
+  xbars <- colMeans(resamples)
+  srs <- apply(resamples, 2, sd)
+  
+  t_fixed <- (xbars - 0) / (s / sqrt(n))
+  t_flex <- (xbars - 0) / (srs / sqrt(n))
+  
+  t_obs_fixed <- (xbar - 0) / (s / sqrt(n))
+  t_obs_flex <- (xbar - 0) / (srs / sqrt(n)) 
+  
+  type1_results$reject_fixed[i] <- mean(abs(t_fixed) >= abs(t_obs_fixed)) < alpha
+  type1_results$reject_flex[i]  <- mean(abs(t_flex) >= abs(t_obs_flex)) < alpha
+}
+
+# Type I error rates
+type1_results %>%
+  summarise(
+    type1_fixed = mean(reject_fixed),
+    type1_flex  = mean(reject_flex)
+  )
+@
+The type 1 error is 0 for both standard deviations which means they have a p value of close to 0 which makes sense given the p values we found in prior parts of the lab. 
   \item Using the same test case(s) as part (a), compute bootstrap confidence 
   intervals and assess their coverage -- how often do we `capture' the parameter
 of interest?
+<<message=FALSE, warning=FALSE>>=
+# Store CI coverage results
+ci_results <- tibble(
+  cover_fixed = logical(S),
+  cover_flex  = logical(S)
+)
+
+for (i in 1:S) {
+  x <- rnorm(n, mean = mu, sd = 1)
+  s <- sd(x)
+  
+  resamples <- replicate(R, sample(x, n, replace = TRUE))
+  xbars <- colMeans(resamples)
+  srs <- apply(resamples, 2, sd)
+  
+  # Fixed-s approach CI
+  ci_fixed <- quantile(xbars, probs = c(0.025, 0.975))
+  
+  # Flex-s approach: use pivot or adjusted method
+  # Here: percentile method on resampled t-stats
+  t_flex <- (xbars - mean(x)) / (srs / sqrt(n))
+  t_quantiles <- quantile(t_flex, probs = c(0.025, 0.975))
+  ci_flex <- mean(x) - rev(t_quantiles) * (s / sqrt(n))
+  
+  ci_results$cover_fixed[i] <- mu >= ci_fixed[1] && mu <= ci_fixed[2]
+  ci_results$cover_flex[i] <- mu >= ci_flex[1] && mu <= ci_flex[2]
+}
+
+# CI coverage
+ci_results %>%
+  summarise(
+    coverage_fixed = mean(cover_fixed),
+    coverage_flex  = mean(cover_flex)
+  )
+@
+The coverage of the flex (using the standard deviation of the resamples sr) is slightly higher than the coverage of fixed (standard deviation of original sample), both of which are around 0.95 which makes sense because the significance level is 0.05. 
 \end{enumerate}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

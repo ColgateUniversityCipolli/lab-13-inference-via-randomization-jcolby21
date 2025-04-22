@@ -276,7 +276,7 @@ Both the p values for for bootstrapping and t-test are both 0 (or close) and bot
 ## # A tibble: 2 x 4
 ##   stat      closer further  diff
 ##   <chr>      <dbl>   <dbl> <dbl>
-## 1 bootstrap  -1.59   -1.66 -1.58
+## 1 bootstrap  -1.59   -1.67 -1.57
 ## 2 t-test     -1.71   -1.71 -1.71
 \end{verbatim}
 \end{kframe}
@@ -317,7 +317,7 @@ The values for the bootstrap method are slightly lower in the closer and differe
 ##   method CI_closer_low CI_closer_high CI_further_low CI_further_high CI_diff_low
 ##   <chr>          <dbl>          <dbl>          <dbl>           <dbl>       <dbl>
 ## 1 t-test         0.117          0.195         -0.257          -0.149       0.272
-## 2 boots~         0.121          0.193         -0.254          -0.156       0.281
+## 2 boots~         0.121          0.193         -0.256          -0.156       0.282
 ## # i 1 more variable: CI_diff_high <dbl>
 \end{verbatim}
 \end{kframe}
@@ -355,9 +355,106 @@ original sample ($s$)
 \begin{enumerate}
   \item Perform a simulation study to evaluate the Type I error for conducting this
 hypothesis test both ways.
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlcom{# Parameters}
+\hldef{R} \hlkwb{<-} \hlnum{1000}   \hlcom{# bootstrap resamples}
+\hldef{S} \hlkwb{<-} \hlnum{1000}   \hlcom{# simulations}
+\hldef{n} \hlkwb{<-} \hlnum{30}     \hlcom{# sample size}
+\hldef{alpha} \hlkwb{<-} \hlnum{0.05}
+\hldef{mu} \hlkwb{<-} \hlnum{0}     \hlcom{# true mean}
+
+\hlcom{# Store rejections}
+\hldef{type1_results} \hlkwb{<-} \hlkwd{tibble}\hldef{(}
+  \hlkwc{reject_fixed} \hldef{=} \hlkwd{logical}\hldef{(S),}
+  \hlkwc{reject_flex}  \hldef{=} \hlkwd{logical}\hldef{(S)}
+\hldef{)}
+
+\hlkwa{for} \hldef{(i} \hlkwa{in} \hlnum{1}\hlopt{:}\hldef{S) \{}
+  \hldef{x} \hlkwb{<-} \hlkwd{rnorm}\hldef{(n,} \hlkwc{mean} \hldef{= mu,} \hlkwc{sd} \hldef{=} \hlnum{1}\hldef{)}
+  \hldef{s} \hlkwb{<-} \hlkwd{sd}\hldef{(x)}
+  \hldef{xbar} \hlkwb{<-} \hlkwd{mean}\hldef{(x)}
+
+  \hldef{resamples} \hlkwb{<-} \hlkwd{replicate}\hldef{(R,} \hlkwd{sample}\hldef{(x, n,} \hlkwc{replace} \hldef{=} \hlnum{TRUE}\hldef{))}
+  \hldef{xbars} \hlkwb{<-} \hlkwd{colMeans}\hldef{(resamples)}
+  \hldef{srs} \hlkwb{<-} \hlkwd{apply}\hldef{(resamples,} \hlnum{2}\hldef{, sd)}
+
+  \hldef{t_fixed} \hlkwb{<-} \hldef{(xbars} \hlopt{-} \hlnum{0}\hldef{)} \hlopt{/} \hldef{(s} \hlopt{/} \hlkwd{sqrt}\hldef{(n))}
+  \hldef{t_flex} \hlkwb{<-} \hldef{(xbars} \hlopt{-} \hlnum{0}\hldef{)} \hlopt{/} \hldef{(srs} \hlopt{/} \hlkwd{sqrt}\hldef{(n))}
+
+  \hldef{t_obs_fixed} \hlkwb{<-} \hldef{(xbar} \hlopt{-} \hlnum{0}\hldef{)} \hlopt{/} \hldef{(s} \hlopt{/} \hlkwd{sqrt}\hldef{(n))}
+  \hldef{t_obs_flex} \hlkwb{<-} \hldef{(xbar} \hlopt{-} \hlnum{0}\hldef{)} \hlopt{/} \hldef{(srs} \hlopt{/} \hlkwd{sqrt}\hldef{(n))}
+
+  \hldef{type1_results}\hlopt{$}\hldef{reject_fixed[i]} \hlkwb{<-} \hlkwd{mean}\hldef{(}\hlkwd{abs}\hldef{(t_fixed)} \hlopt{>=} \hlkwd{abs}\hldef{(t_obs_fixed))} \hlopt{<} \hldef{alpha}
+  \hldef{type1_results}\hlopt{$}\hldef{reject_flex[i]}  \hlkwb{<-} \hlkwd{mean}\hldef{(}\hlkwd{abs}\hldef{(t_flex)} \hlopt{>=} \hlkwd{abs}\hldef{(t_obs_flex))} \hlopt{<} \hldef{alpha}
+\hldef{\}}
+
+\hlcom{# Type I error rates}
+\hldef{type1_results} \hlopt{%>%}
+  \hlkwd{summarise}\hldef{(}
+    \hlkwc{type1_fixed} \hldef{=} \hlkwd{mean}\hldef{(reject_fixed),}
+    \hlkwc{type1_flex}  \hldef{=} \hlkwd{mean}\hldef{(reject_flex)}
+  \hldef{)}
+\end{alltt}
+\begin{verbatim}
+## # A tibble: 1 x 2
+##   type1_fixed type1_flex
+##         <dbl>      <dbl>
+## 1           0          0
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+The type 1 error is 0 for both standard deviations which means they have a p value of close to 0 which makes sense given the p values we found in prior parts of the lab. 
   \item Using the same test case(s) as part (a), compute bootstrap confidence 
   intervals and assess their coverage -- how often do we `capture' the parameter
 of interest?
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlcom{# Store CI coverage results}
+\hldef{ci_results} \hlkwb{<-} \hlkwd{tibble}\hldef{(}
+  \hlkwc{cover_fixed} \hldef{=} \hlkwd{logical}\hldef{(S),}
+  \hlkwc{cover_flex}  \hldef{=} \hlkwd{logical}\hldef{(S)}
+\hldef{)}
+
+\hlkwa{for} \hldef{(i} \hlkwa{in} \hlnum{1}\hlopt{:}\hldef{S) \{}
+  \hldef{x} \hlkwb{<-} \hlkwd{rnorm}\hldef{(n,} \hlkwc{mean} \hldef{= mu,} \hlkwc{sd} \hldef{=} \hlnum{1}\hldef{)}
+  \hldef{s} \hlkwb{<-} \hlkwd{sd}\hldef{(x)}
+
+  \hldef{resamples} \hlkwb{<-} \hlkwd{replicate}\hldef{(R,} \hlkwd{sample}\hldef{(x, n,} \hlkwc{replace} \hldef{=} \hlnum{TRUE}\hldef{))}
+  \hldef{xbars} \hlkwb{<-} \hlkwd{colMeans}\hldef{(resamples)}
+  \hldef{srs} \hlkwb{<-} \hlkwd{apply}\hldef{(resamples,} \hlnum{2}\hldef{, sd)}
+
+  \hlcom{# Fixed-s approach CI}
+  \hldef{ci_fixed} \hlkwb{<-} \hlkwd{quantile}\hldef{(xbars,} \hlkwc{probs} \hldef{=} \hlkwd{c}\hldef{(}\hlnum{0.025}\hldef{,} \hlnum{0.975}\hldef{))}
+
+  \hlcom{# Flex-s approach: use pivot or adjusted method}
+  \hlcom{# Here: percentile method on resampled t-stats}
+  \hldef{t_flex} \hlkwb{<-} \hldef{(xbars} \hlopt{-} \hlkwd{mean}\hldef{(x))} \hlopt{/} \hldef{(srs} \hlopt{/} \hlkwd{sqrt}\hldef{(n))}
+  \hldef{t_quantiles} \hlkwb{<-} \hlkwd{quantile}\hldef{(t_flex,} \hlkwc{probs} \hldef{=} \hlkwd{c}\hldef{(}\hlnum{0.025}\hldef{,} \hlnum{0.975}\hldef{))}
+  \hldef{ci_flex} \hlkwb{<-} \hlkwd{mean}\hldef{(x)} \hlopt{-} \hlkwd{rev}\hldef{(t_quantiles)} \hlopt{*} \hldef{(s} \hlopt{/} \hlkwd{sqrt}\hldef{(n))}
+
+  \hldef{ci_results}\hlopt{$}\hldef{cover_fixed[i]} \hlkwb{<-} \hldef{mu} \hlopt{>=} \hldef{ci_fixed[}\hlnum{1}\hldef{]} \hlopt{&&} \hldef{mu} \hlopt{<=} \hldef{ci_fixed[}\hlnum{2}\hldef{]}
+  \hldef{ci_results}\hlopt{$}\hldef{cover_flex[i]} \hlkwb{<-} \hldef{mu} \hlopt{>=} \hldef{ci_flex[}\hlnum{1}\hldef{]} \hlopt{&&} \hldef{mu} \hlopt{<=} \hldef{ci_flex[}\hlnum{2}\hldef{]}
+\hldef{\}}
+
+\hlcom{# CI coverage}
+\hldef{ci_results} \hlopt{%>%}
+  \hlkwd{summarise}\hldef{(}
+    \hlkwc{coverage_fixed} \hldef{=} \hlkwd{mean}\hldef{(cover_fixed),}
+    \hlkwc{coverage_flex}  \hldef{=} \hlkwd{mean}\hldef{(cover_flex)}
+  \hldef{)}
+\end{alltt}
+\begin{verbatim}
+## # A tibble: 1 x 2
+##   coverage_fixed coverage_flex
+##            <dbl>         <dbl>
+## 1           0.94         0.955
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+The coverage of the flex (using the standard deviation of the resamples sr) is slightly higher than the coverage of fixed (standard deviation of original sample), both of which are around 0.95 which makes sense because the significance level is 0.05. 
 \end{enumerate}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

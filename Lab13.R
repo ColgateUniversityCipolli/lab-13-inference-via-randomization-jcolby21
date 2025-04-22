@@ -147,3 +147,89 @@ tibble(
   CI_diff_low = c(ci_ttest_diff[1], ci_boot_diff[1]),
   CI_diff_high = c(ci_ttest_diff[2], ci_boot_diff[2])
 )
+
+#Question 3
+#Part A
+
+
+#Part B
+
+
+#Part C
+
+
+#Question 4
+#Part A
+# Parameters
+R <- 1000   # bootstrap resamples
+S <- 1000   # simulations
+n <- 30     # sample size
+alpha <- 0.05
+mu <- 0     # true mean
+
+# Store rejections
+type1_results <- tibble(
+  reject_fixed = logical(S),
+  reject_flex  = logical(S)
+)
+
+for (i in 1:S) {
+  x <- rnorm(n, mean = mu, sd = 1)
+  s <- sd(x)
+  xbar <- mean(x)
+  
+  resamples <- replicate(R, sample(x, n, replace = TRUE))
+  xbars <- colMeans(resamples)
+  srs <- apply(resamples, 2, sd)
+  
+  t_fixed <- (xbars - 0) / (s / sqrt(n))
+  t_flex <- (xbars - 0) / (srs / sqrt(n))
+  
+  t_obs_fixed <- (xbar - 0) / (s / sqrt(n))
+  t_obs_flex <- (xbar - 0) / (srs / sqrt(n)) 
+  
+  type1_results$reject_fixed[i] <- mean(abs(t_fixed) >= abs(t_obs_fixed)) < alpha
+  type1_results$reject_flex[i]  <- mean(abs(t_flex) >= abs(t_obs_flex)) < alpha
+}
+
+# Type I error rates
+type1_results %>%
+  summarise(
+    type1_fixed = mean(reject_fixed),
+    type1_flex  = mean(reject_flex)
+  )
+
+#Part B
+# Store CI coverage results
+ci_results <- tibble(
+  cover_fixed = logical(S),
+  cover_flex  = logical(S)
+)
+
+for (i in 1:S) {
+  x <- rnorm(n, mean = mu, sd = 1)
+  s <- sd(x)
+  
+  resamples <- replicate(R, sample(x, n, replace = TRUE))
+  xbars <- colMeans(resamples)
+  srs <- apply(resamples, 2, sd)
+  
+  # Fixed-s approach CI
+  ci_fixed <- quantile(xbars, probs = c(0.025, 0.975))
+  
+  # Flex-s approach: use pivot or adjusted method
+  # Here: percentile method on resampled t-stats
+  t_flex <- (xbars - mean(x)) / (srs / sqrt(n))
+  t_quantiles <- quantile(t_flex, probs = c(0.025, 0.975))
+  ci_flex <- mean(x) - rev(t_quantiles) * (s / sqrt(n))
+  
+  ci_results$cover_fixed[i] <- mu >= ci_fixed[1] && mu <= ci_fixed[2]
+  ci_results$cover_flex[i] <- mu >= ci_flex[1] && mu <= ci_flex[2]
+}
+
+# CI coverage
+ci_results %>%
+  summarise(
+    coverage_fixed = mean(cover_fixed),
+    coverage_flex  = mean(cover_flex)
+  )
