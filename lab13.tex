@@ -119,7 +119,24 @@ The Edgeworth error in p-value estimate: -1.303424e-13. This means the potential
   \item Compute the error for $t$ statistics from -10 to 10 and plot a line
   that shows the error across $t$. Continue to use the skewness and 
   the sample size for the zebra finch further data.
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hldef{t_vals} \hlkwb{<-} \hlkwd{seq}\hldef{(}\hlopt{-}\hlnum{10}\hldef{,} \hlnum{10}\hldef{,} \hlkwc{length.out} \hldef{=} \hlnum{1000}\hldef{)}
+\hldef{fz_vals} \hlkwb{<-} \hlkwd{dnorm}\hldef{(t_vals)}
+\hldef{error_vals} \hlkwb{<-} \hldef{(skew} \hlopt{/} \hlkwd{sqrt}\hldef{(n))} \hlopt{*} \hldef{((}\hlnum{2} \hlopt{*} \hldef{t_vals}\hlopt{^}\hlnum{2} \hlopt{+} \hlnum{1}\hldef{)} \hlopt{/} \hlnum{6}\hldef{)} \hlopt{*} \hldef{fz_vals}
 
+\hldef{error_df} \hlkwb{<-} \hlkwd{data.frame}\hldef{(}\hlkwc{t} \hldef{= t_vals,} \hlkwc{error} \hldef{= error_vals)}
+
+\hlkwd{ggplot}\hldef{(error_df,} \hlkwd{aes}\hldef{(}\hlkwc{x} \hldef{= t,} \hlkwc{y} \hldef{= error))} \hlopt{+}
+  \hlkwd{geom_line}\hldef{(}\hlkwc{color} \hldef{=} \hlsng{"blue"}\hldef{)} \hlopt{+}
+  \hlkwd{labs}\hldef{(}\hlkwc{title} \hldef{=} \hlsng{"Edgeworth Approximation Error across t-values"}\hldef{,}
+       \hlkwc{x} \hldef{=} \hlsng{"t"}\hldef{,} \hlkwc{y} \hldef{=} \hlsng{"Error in P(T <= t)"}\hldef{)} \hlopt{+}
+  \hlkwd{theme_minimal}\hldef{()}
+\end{alltt}
+\end{kframe}
+\includegraphics[width=\maxwidth]{figure/unnamed-chunk-3-1} 
+\end{knitrout}
   \item Suppose we wanted to have a tail probability within 10\% of the desired
   $\alpha=0.05$. Recall we did a left-tailed test using the further data.
   How large of a sample size would we need? That is, we need
@@ -127,6 +144,21 @@ The Edgeworth error in p-value estimate: -1.303424e-13. This means the potential
   \[0.10 \alpha  \stackrel{set}{=} \underbrace{\frac{\text{skew}}{\sqrt{n}} \frac{(2t^2+1)}{6} f_Z(t)}_{\textrm{error}},\]
   which yields
   \[ n = \left(\frac{\text{skew}}{6(0.10\alpha)} (2t^2 + 1) f_Z(t)\right)^2.\]
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hldef{alpha} \hlkwb{<-} \hlnum{0.05}
+\hldef{target_error} \hlkwb{<-} \hlnum{0.10} \hlopt{*} \hldef{alpha}  \hlcom{# 10% of alpha}
+\hldef{t_alpha} \hlkwb{<-} \hlkwd{qnorm}\hldef{(alpha)}  \hlcom{# for left-tailed test}
+\hldef{fz_alpha} \hlkwb{<-} \hlkwd{dnorm}\hldef{(t_alpha)}
+
+\hlcom{# Solve for n}
+\hldef{numerator} \hlkwb{<-} \hldef{skew} \hlopt{*} \hldef{(}\hlnum{2} \hlopt{*} \hldef{t_alpha}\hlopt{^}\hlnum{2} \hlopt{+} \hlnum{1}\hldef{)} \hlopt{*} \hldef{fz_alpha}
+\hldef{n_required} \hlkwb{<-} \hldef{(numerator} \hlopt{/} \hldef{(}\hlnum{6} \hlopt{*} \hldef{target_error))}\hlopt{^}\hlnum{2}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+The required sample size to keep the Edgeworth approximation error within 10\% of the tail probability $\alpha = 0.05$ is approximately $n = 589$.
 \end{enumerate}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

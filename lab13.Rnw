@@ -67,7 +67,19 @@ The Edgeworth error in p-value estimate: -1.303424e-13. This means the potential
   \item Compute the error for $t$ statistics from -10 to 10 and plot a line
   that shows the error across $t$. Continue to use the skewness and 
   the sample size for the zebra finch further data.
+<<message=FALSE, warning=FALSE>>=
+t_vals <- seq(-10, 10, length.out = 1000)
+fz_vals <- dnorm(t_vals)
+error_vals <- (skew / sqrt(n)) * ((2 * t_vals^2 + 1) / 6) * fz_vals
 
+error_df <- data.frame(t = t_vals, error = error_vals)
+
+ggplot(error_df, aes(x = t, y = error)) +
+  geom_line(color = "blue") +
+  labs(title = "Edgeworth Approximation Error across t-values",
+       x = "t", y = "Error in P(T <= t)") +
+  theme_minimal()
+@
   \item Suppose we wanted to have a tail probability within 10\% of the desired
   $\alpha=0.05$. Recall we did a left-tailed test using the further data.
   How large of a sample size would we need? That is, we need
@@ -75,6 +87,17 @@ The Edgeworth error in p-value estimate: -1.303424e-13. This means the potential
   \[0.10 \alpha  \stackrel{set}{=} \underbrace{\frac{\text{skew}}{\sqrt{n}} \frac{(2t^2+1)}{6} f_Z(t)}_{\textrm{error}},\]
   which yields
   \[ n = \left(\frac{\text{skew}}{6(0.10\alpha)} (2t^2 + 1) f_Z(t)\right)^2.\]
+<< message=FALSE, warning=FALSE>>=
+alpha <- 0.05
+target_error <- 0.10 * alpha  # 10% of alpha
+t_alpha <- qnorm(alpha)  # for left-tailed test
+fz_alpha <- dnorm(t_alpha)
+
+# Solve for n
+numerator <- skew * (2 * t_alpha^2 + 1) * fz_alpha
+n_required <- (numerator / (6 * target_error))^2
+@
+The required sample size to keep the Edgeworth approximation error within 10\% of the tail probability $\alpha = 0.05$ is approximately $n = 589$.
 \end{enumerate}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -4,7 +4,8 @@ library(ggplot2)
 dat.finch = read.csv("zebrafinches.csv")
 
 #Question 1
-library(moments)#used for calculating statistics
+#Part A
+library(moments)#used for calculating statistics (skewness)
 
 n <- length(dat.finch$further)
 x_bar <- mean(dat.finch$further)
@@ -22,5 +23,28 @@ Fz <- pnorm(t_obs)
 
 # Edgeworth approximation error
 edgeworth_error <- (skew / sqrt(n)) * ((2 * t_obs^2 + 1) / 6) * fz
+
+#Part B
+t_vals <- seq(-10, 10, length.out = 1000)
+fz_vals <- dnorm(t_vals)
+error_vals <- (skew / sqrt(n)) * ((2 * t_vals^2 + 1) / 6) * fz_vals
+
+error_df <- data.frame(t = t_vals, error = error_vals)
+
+ggplot(error_df, aes(x = t, y = error)) +
+  geom_line(color = "blue") +
+  labs(title = "Edgeworth Approximation Error across t-values",
+       x = "t", y = "Error in P(T ≤ t)") +
+  theme_minimal()
+
+#Part C
+alpha <- 0.05
+target_error <- 0.10 * alpha  # 10% of alpha
+t_alpha <- qnorm(alpha)  # for left-tailed test
+fz_alpha <- dnorm(t_alpha)
+
+# Solve for n
+numerator <- skew * (2 * t_alpha^2 + 1) * fz_alpha
+n_required <- (numerator / (6 * target_error))^2
 
 
