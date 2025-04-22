@@ -37,7 +37,33 @@ for the the further observations.
   where $f_Z(\cdot)$ and $F_Z(\cdot)$ are the Gaussian PDF and CDF and skew is the
   skewness of the data. What is the potential error in the computation of the 
   $p$-value when testing $H_0: \mu_X=0; H_a: \mu_X<0$ using the zebra finch further data? 
+<< message=FALSE, warning=FALSE>>=
+library(tidyverse)
+#Load in Data
+dat.finch = read.csv("zebrafinches.csv")
 
+#Question 1
+library(moments)#used for calculating statistics
+library(ggplot2)
+
+n <- length(dat.finch$further)
+x_bar <- mean(dat.finch$further)
+s <- sd(dat.finch$further)
+t_obs <- x_bar / (s / sqrt(n)) #t-value
+skew <- skewness(dat.finch$further)
+
+#Could use this instead shows same thing
+#(ttest <- t.test(x = dat.finch$further,
+                # mu = 0,
+                # alternative = "less")) 
+# Gaussian PDF and CDF at t
+fz <- dnorm(t_obs)
+Fz <- pnorm(t_obs)
+
+# Edgeworth approximation error
+edgeworth_error <- (skew / sqrt(n)) * ((2 * t_obs^2 + 1) / 6) * fz
+@
+The Edgeworth error in p-value estimate: -1.303424e-13. This means the potential error is very small only changing the p value by 1.303424e-11 percent which is not important. 
   \item Compute the error for $t$ statistics from -10 to 10 and plot a line
   that shows the error across $t$. Continue to use the skewness and 
   the sample size for the zebra finch further data.
