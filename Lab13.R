@@ -150,12 +150,103 @@ tibble(
 
 #Question 3
 #Part A
+R <- 10000
+mu0 <- 0
 
+## -- Closer data --
+rand_closer <- tibble(xbars = rep(NA, R))
+x.shift <- closer - mu0
 
+for (i in 1:R) {
+  curr.rand <- x.shift * sample(c(-1, 1), size = length(x.shift), replace = TRUE)
+  rand_closer$xbars[i] <- mean(curr.rand)
+}
+
+rand_closer <- rand_closer |>
+  mutate(xbars = xbars + mu0)
+
+## -- Further data --
+rand_further <- tibble(xbars = rep(NA, R))
+x.shift <- further - mu0
+
+for (i in 1:R) {
+  curr.rand <- x.shift * sample(c(-1, 1), size = length(x.shift), replace = TRUE)
+  rand_further$xbars[i] <- mean(curr.rand)
+}
+
+rand_further <- rand_further |>
+  mutate(xbars = xbars + mu0)
+
+## -- Difference data --
+rand_diff <- tibble(xbars = rep(NA, R))
+x.shift <- diff - mu0
+
+for (i in 1:R) {
+  curr.rand <- x.shift * sample(c(-1, 1), size = length(x.shift), replace = TRUE)
+  rand_diff$xbars[i] <- mean(curr.rand)
+}
+
+rand_diff <- rand_diff |>
+  mutate(xbars = xbars + mu0)
 #Part B
+# Function to compute p-value
+compute_pval <- function(data, rand_dist, mu0 = 0) {
+  delta <- abs(mean(data) - mu0)
+  low <- mu0 - delta
+  high <- mu0 + delta
+  
+  mean(rand_dist$xbars <= low) + mean(rand_dist$xbars >= high)
+}
 
+# Calculate p-values
+pval_closer <- compute_pval(closer, rand_closer)
+pval_further <- compute_pval(further, rand_further)
+pval_diff <- compute_pval(diff, rand_diff)
+
+# View results
+pval_closer
+pval_further
+pval_diff
 
 #Part C
+# Function to find CI bounds
+
+# Function to compute two-sided p-value for a given mu0
+compute_p_value <- function(data, mu0, R = 10000) {
+  x_shift <- data - mu0
+  rand_means <- replicate(R, mean(x_shift * sample(c(-1, 1), length(x_shift), replace = TRUE)))
+  rand_means <- rand_means + mu0
+  delta <- abs(mean(data) - mu0)
+  low <- mu0 - delta
+  high <- mu0 + delta
+  mean(rand_means <= low | rand_means >= high)
+}
+
+# Function to find confidence interval bounds
+find_ci_bounds <- function(data, step = 0.0001, alpha = 0.05) {
+  sample_mean <- mean(data)
+  # Lower bound
+  mu0_lower <- sample_mean
+  while (compute_p_value(data, mu0_lower) < alpha) {
+    mu0_lower <- mu0_lower - step
+  }
+  # Upper bound
+  mu0_upper <- sample_mean
+  while (compute_p_value(data, mu0_upper) < alpha) {
+    mu0_upper <- mu0_upper + step
+  }
+  c(lower = mu0_lower, upper = mu0_upper)
+}
+
+# Compute confidence intervals
+ci_diff <- find_ci_bounds(diff)
+ci_closer <- find_ci_bounds(closer)
+ci_further <- find_ci_bounds(further)
+
+# Display results
+cat("95% Confidence Interval for diff: [", ci_diff["lower"], ", ", ci_diff["upper"], "]\n")
+cat("95% Confidence Interval for closer: [", ci_closer["lower"], ", ", ci_closer["upper"], "]\n")
+cat("95% Confidence Interval for further: [", ci_further["lower"], ", ", ci_further["upper"], "]\n")
 
 
 #Question 4

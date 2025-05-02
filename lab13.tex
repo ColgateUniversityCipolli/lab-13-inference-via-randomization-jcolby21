@@ -276,7 +276,7 @@ Both the p values for for bootstrapping and t-test are both 0 (or close) and bot
 ## # A tibble: 2 x 4
 ##   stat      closer further  diff
 ##   <chr>      <dbl>   <dbl> <dbl>
-## 1 bootstrap  -1.59   -1.67 -1.57
+## 1 bootstrap  -1.63   -1.66 -1.54
 ## 2 t-test     -1.71   -1.71 -1.71
 \end{verbatim}
 \end{kframe}
@@ -317,7 +317,7 @@ The values for the bootstrap method are slightly lower in the closer and differe
 ##   method CI_closer_low CI_closer_high CI_further_low CI_further_high CI_diff_low
 ##   <chr>          <dbl>          <dbl>          <dbl>           <dbl>       <dbl>
 ## 1 t-test         0.117          0.195         -0.257          -0.149       0.272
-## 2 boots~         0.121          0.193         -0.256          -0.156       0.282
+## 2 boots~         0.121          0.193         -0.256          -0.155       0.282
 ## # i 1 more variable: CI_diff_high <dbl>
 \end{verbatim}
 \end{kframe}
@@ -334,11 +334,147 @@ randomization procedure.
 \begin{enumerate}
 \item Now, consider the zebra finch data. We do not know the generating distributions
 for the closer, further, and difference data, so perform the randomization procedure
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hldef{R} \hlkwb{<-} \hlnum{10000}
+\hldef{mu0} \hlkwb{<-} \hlnum{0}
+
+\hlcom{## -- Closer data --}
+\hldef{rand_closer} \hlkwb{<-} \hlkwd{tibble}\hldef{(}\hlkwc{xbars} \hldef{=} \hlkwd{rep}\hldef{(}\hlnum{NA}\hldef{, R))}
+\hldef{x.shift} \hlkwb{<-} \hldef{closer} \hlopt{-} \hldef{mu0}
+
+\hlkwa{for} \hldef{(i} \hlkwa{in} \hlnum{1}\hlopt{:}\hldef{R) \{}
+  \hldef{curr.rand} \hlkwb{<-} \hldef{x.shift} \hlopt{*} \hlkwd{sample}\hldef{(}\hlkwd{c}\hldef{(}\hlopt{-}\hlnum{1}\hldef{,} \hlnum{1}\hldef{),} \hlkwc{size} \hldef{=} \hlkwd{length}\hldef{(x.shift),} \hlkwc{replace} \hldef{=} \hlnum{TRUE}\hldef{)}
+  \hldef{rand_closer}\hlopt{$}\hldef{xbars[i]} \hlkwb{<-} \hlkwd{mean}\hldef{(curr.rand)}
+\hldef{\}}
+
+\hldef{rand_closer} \hlkwb{<-} \hldef{rand_closer |>}
+  \hlkwd{mutate}\hldef{(}\hlkwc{xbars} \hldef{= xbars} \hlopt{+} \hldef{mu0)}
+
+\hlcom{## -- Further data --}
+\hldef{rand_further} \hlkwb{<-} \hlkwd{tibble}\hldef{(}\hlkwc{xbars} \hldef{=} \hlkwd{rep}\hldef{(}\hlnum{NA}\hldef{, R))}
+\hldef{x.shift} \hlkwb{<-} \hldef{further} \hlopt{-} \hldef{mu0}
+
+\hlkwa{for} \hldef{(i} \hlkwa{in} \hlnum{1}\hlopt{:}\hldef{R) \{}
+  \hldef{curr.rand} \hlkwb{<-} \hldef{x.shift} \hlopt{*} \hlkwd{sample}\hldef{(}\hlkwd{c}\hldef{(}\hlopt{-}\hlnum{1}\hldef{,} \hlnum{1}\hldef{),} \hlkwc{size} \hldef{=} \hlkwd{length}\hldef{(x.shift),} \hlkwc{replace} \hldef{=} \hlnum{TRUE}\hldef{)}
+  \hldef{rand_further}\hlopt{$}\hldef{xbars[i]} \hlkwb{<-} \hlkwd{mean}\hldef{(curr.rand)}
+\hldef{\}}
+
+\hldef{rand_further} \hlkwb{<-} \hldef{rand_further |>}
+  \hlkwd{mutate}\hldef{(}\hlkwc{xbars} \hldef{= xbars} \hlopt{+} \hldef{mu0)}
+
+\hlcom{## -- Difference data --}
+\hldef{rand_diff} \hlkwb{<-} \hlkwd{tibble}\hldef{(}\hlkwc{xbars} \hldef{=} \hlkwd{rep}\hldef{(}\hlnum{NA}\hldef{, R))}
+\hldef{x.shift} \hlkwb{<-} \hldef{diff} \hlopt{-} \hldef{mu0}
+
+\hlkwa{for} \hldef{(i} \hlkwa{in} \hlnum{1}\hlopt{:}\hldef{R) \{}
+  \hldef{curr.rand} \hlkwb{<-} \hldef{x.shift} \hlopt{*} \hlkwd{sample}\hldef{(}\hlkwd{c}\hldef{(}\hlopt{-}\hlnum{1}\hldef{,} \hlnum{1}\hldef{),} \hlkwc{size} \hldef{=} \hlkwd{length}\hldef{(x.shift),} \hlkwc{replace} \hldef{=} \hlnum{TRUE}\hldef{)}
+  \hldef{rand_diff}\hlopt{$}\hldef{xbars[i]} \hlkwb{<-} \hlkwd{mean}\hldef{(curr.rand)}
+\hldef{\}}
+
+\hldef{rand_diff} \hlkwb{<-} \hldef{rand_diff |>}
+  \hlkwd{mutate}\hldef{(}\hlkwc{xbars} \hldef{= xbars} \hlopt{+} \hldef{mu0)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
   \item Compute the randomization test $p$-value for each test.
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlcom{# Function to compute p-value}
+\hldef{compute_pval} \hlkwb{<-} \hlkwa{function}\hldef{(}\hlkwc{data}\hldef{,} \hlkwc{rand_dist}\hldef{,} \hlkwc{mu0} \hldef{=} \hlnum{0}\hldef{) \{}
+  \hldef{delta} \hlkwb{<-} \hlkwd{abs}\hldef{(}\hlkwd{mean}\hldef{(data)} \hlopt{-} \hldef{mu0)}
+  \hldef{low} \hlkwb{<-} \hldef{mu0} \hlopt{-} \hldef{delta}
+  \hldef{high} \hlkwb{<-} \hldef{mu0} \hlopt{+} \hldef{delta}
+
+  \hlkwd{mean}\hldef{(rand_dist}\hlopt{$}\hldef{xbars} \hlopt{<=} \hldef{low)} \hlopt{+} \hlkwd{mean}\hldef{(rand_dist}\hlopt{$}\hldef{xbars} \hlopt{>=} \hldef{high)}
+\hldef{\}}
+
+\hlcom{# Calculate p-values}
+\hldef{pval_closer} \hlkwb{<-} \hlkwd{compute_pval}\hldef{(closer, rand_closer)}
+\hldef{pval_further} \hlkwb{<-} \hlkwd{compute_pval}\hldef{(further, rand_further)}
+\hldef{pval_diff} \hlkwb{<-} \hlkwd{compute_pval}\hldef{(diff, rand_diff)}
+
+\hlcom{# View results}
+\hldef{pval_closer}
+\end{alltt}
+\begin{verbatim}
+## [1] 0
+\end{verbatim}
+\begin{alltt}
+\hldef{pval_further}
+\end{alltt}
+\begin{verbatim}
+## [1] 0
+\end{verbatim}
+\begin{alltt}
+\hldef{pval_diff}
+\end{alltt}
+\begin{verbatim}
+## [1] 0
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
   \item Compute the randomization confidence interval by iterating over values of $\mu_0$.\\
   \textbf{Hint:} You can ``search" for the lower bound from $Q_1$ and subtracting by 0.0001, 
   and the upper bound using $Q_3$ and increasing by 0.0001. You will continue until you find 
   the first value for which the two-sided $p$-value is greater than or equal to 0.05.
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlcom{# Function to compute two-sided p-value for a given mu0}
+\hldef{compute_p_value} \hlkwb{<-} \hlkwa{function}\hldef{(}\hlkwc{data}\hldef{,} \hlkwc{mu0}\hldef{,} \hlkwc{R} \hldef{=} \hlnum{10000}\hldef{) \{}
+  \hldef{x_shift} \hlkwb{<-} \hldef{data} \hlopt{-} \hldef{mu0}
+  \hldef{rand_means} \hlkwb{<-} \hlkwd{replicate}\hldef{(R,} \hlkwd{mean}\hldef{(x_shift} \hlopt{*} \hlkwd{sample}\hldef{(}\hlkwd{c}\hldef{(}\hlopt{-}\hlnum{1}\hldef{,} \hlnum{1}\hldef{),} \hlkwd{length}\hldef{(x_shift),} \hlkwc{replace} \hldef{=} \hlnum{TRUE}\hldef{)))}
+  \hldef{rand_means} \hlkwb{<-} \hldef{rand_means} \hlopt{+} \hldef{mu0}
+  \hldef{delta} \hlkwb{<-} \hlkwd{abs}\hldef{(}\hlkwd{mean}\hldef{(data)} \hlopt{-} \hldef{mu0)}
+  \hldef{low} \hlkwb{<-} \hldef{mu0} \hlopt{-} \hldef{delta}
+  \hldef{high} \hlkwb{<-} \hldef{mu0} \hlopt{+} \hldef{delta}
+  \hlkwd{mean}\hldef{(rand_means} \hlopt{<=} \hldef{low} \hlopt{|} \hldef{rand_means} \hlopt{>=} \hldef{high)}
+\hldef{\}}
+
+\hlcom{# Function to find confidence interval bounds}
+\hldef{find_ci_bounds} \hlkwb{<-} \hlkwa{function}\hldef{(}\hlkwc{data}\hldef{,} \hlkwc{step} \hldef{=} \hlnum{0.0001}\hldef{,} \hlkwc{alpha} \hldef{=} \hlnum{0.05}\hldef{) \{}
+  \hldef{sample_mean} \hlkwb{<-} \hlkwd{mean}\hldef{(data)}
+  \hlcom{# Lower bound}
+  \hldef{mu0_lower} \hlkwb{<-} \hldef{sample_mean}
+  \hlkwa{while} \hldef{(}\hlkwd{compute_p_value}\hldef{(data, mu0_lower)} \hlopt{<} \hldef{alpha) \{}
+    \hldef{mu0_lower} \hlkwb{<-} \hldef{mu0_lower} \hlopt{-} \hldef{step}
+  \hldef{\}}
+  \hlcom{# Upper bound}
+  \hldef{mu0_upper} \hlkwb{<-} \hldef{sample_mean}
+  \hlkwa{while} \hldef{(}\hlkwd{compute_p_value}\hldef{(data, mu0_upper)} \hlopt{<} \hldef{alpha) \{}
+    \hldef{mu0_upper} \hlkwb{<-} \hldef{mu0_upper} \hlopt{+} \hldef{step}
+  \hldef{\}}
+  \hlkwd{c}\hldef{(}\hlkwc{lower} \hldef{= mu0_lower,} \hlkwc{upper} \hldef{= mu0_upper)}
+\hldef{\}}
+
+\hlcom{# Compute confidence intervals}
+\hldef{ci_diff} \hlkwb{<-} \hlkwd{find_ci_bounds}\hldef{(diff)}
+\hldef{ci_closer} \hlkwb{<-} \hlkwd{find_ci_bounds}\hldef{(closer)}
+\hldef{ci_further} \hlkwb{<-} \hlkwd{find_ci_bounds}\hldef{(further)}
+
+\hlcom{# Display results}
+\hlkwd{cat}\hldef{(}\hlsng{"95% Confidence Interval for diff: ["}\hldef{, ci_diff[}\hlsng{"lower"}\hldef{],} \hlsng{", "}\hldef{, ci_diff[}\hlsng{"upper"}\hldef{],} \hlsng{"]\textbackslash{}n"}\hldef{)}
+\end{alltt}
+\begin{verbatim}
+## 95% Confidence Interval for diff: [ 0.3589475 ,  0.3589475 ]
+\end{verbatim}
+\begin{alltt}
+\hlkwd{cat}\hldef{(}\hlsng{"95% Confidence Interval for closer: ["}\hldef{, ci_closer[}\hlsng{"lower"}\hldef{],} \hlsng{", "}\hldef{, ci_closer[}\hlsng{"upper"}\hldef{],} \hlsng{"]\textbackslash{}n"}\hldef{)}
+\end{alltt}
+\begin{verbatim}
+## 95% Confidence Interval for closer: [ 0.1562231 ,  0.1562231 ]
+\end{verbatim}
+\begin{alltt}
+\hlkwd{cat}\hldef{(}\hlsng{"95% Confidence Interval for further: ["}\hldef{, ci_further[}\hlsng{"lower"}\hldef{],} \hlsng{", "}\hldef{, ci_further[}\hlsng{"upper"}\hldef{],} \hlsng{"]\textbackslash{}n"}\hldef{)}
+\end{alltt}
+\begin{verbatim}
+## 95% Confidence Interval for further: [ -0.2027244 ,  -0.2027244 ]
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
 \end{enumerate}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -450,7 +586,7 @@ of interest?
 ## # A tibble: 1 x 2
 ##   coverage_fixed coverage_flex
 ##            <dbl>         <dbl>
-## 1           0.94         0.955
+## 1          0.925         0.939
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
